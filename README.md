@@ -5,7 +5,7 @@ Class php for build mysql querys
 ## Status
 
 - Select, update, insert and delete querys can be builded
-- Join option will be added soon
+- Added **join()**, **leftJoin()** and **rightJoin()** methods
 
 ## Installation
 
@@ -31,7 +31,6 @@ include "query.class.php";
 
     // Create instance
     $query = new Query();
-
     $query->select();   //Type of query: select() || update() || insert() || delete()
     $query->table("posts"); // Set the table
     $query->columns(array("id", "title", "slug"));  // Set the columns to return. Default *
@@ -51,6 +50,34 @@ Returns:
     WHERE (title LIKE '%keywordtofind%') AND (`id` = 1 OR `id` = 2)
     ORDER BY `date`
     DESC LIMIT 1,10;
+```
+
+### Selecting data: Join tables
+
+```php
+    // Include class
+    include "query.class.php";
+
+    // Create instance
+    $query = new Query();
+    //
+    $query->select();
+    $query->table("blog_posts", "bp");  // params: table_name, alias
+    $query->columns(array("bp" => "id", "bc"=> "id"));  //If query have a join, columns must have a table alias as key
+    // join(), leftJoin() or rightJoin()
+    $query->leftJoin("blog_category", "bc", "bp.category = bc.id"); // params: table, alias, "ON" condition
+    $query->where(array("bc.id = 1"));
+
+    echo $query->build();   // Build and returns a query string
+```
+
+Returns:
+
+```sql
+   SELECT `bp`.`id`, `bc`.`id`
+   FROM `blog_posts` AS bp
+   LEFT JOIN `blog_category` AS bc ON bp.category = bc.id
+   WHERE (bc.id = 1);
 ```
 
 ### Insert data

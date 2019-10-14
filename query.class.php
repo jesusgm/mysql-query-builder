@@ -8,12 +8,14 @@
     class Query {
         var $type = "";
         var $table = "";
+        var $tableAlias = "";
         var $columns = [];
         var $values = [];
         var $where = [];
         var $orWhere = [];
         var $order = "";
         var $limit = "";
+        var $joins = [];
         
 		function select() {
 			$this->type = SELECT;
@@ -32,8 +34,9 @@
             $this->type = DELETE;
         }
         
-        function table($table) {
+        function table($table, $alias = "") {
             $this->table = $table;
+            $this->tableAlias = $alias;
         }
 
         function columns($columns) {
@@ -56,6 +59,33 @@
             $this->limit = $limit;
         }
 
+        function join($table, $alias = "", $on){
+            $this->joins[] = array(
+                                    "type" => "JOIN", 
+                                    "table" => "`".$table."`",
+                                    "alias" => $alias,
+                                    "on" => $on
+                                );
+        }
+
+        function leftJoin($table, $alias = "", $on){
+            $this->joins[] = array(
+                                    "type" => "LEFT JOIN", 
+                                    "table" => "`".$table."`",
+                                    "alias" => $alias,
+                                    "on" => $on
+                                );
+        }
+
+        function rightJoin($table, $alias, $on){
+            $this->joins[] = array(
+                                    "type" => "RIGHT JOIN", 
+                                    "table" => "`".$table."`",
+                                    "alias" => $alias,
+                                    "on" => $on
+                                );
+        }
+
 
         function build() {
             $queryString = "";
@@ -63,12 +93,29 @@
                 case SELECT:
                     $queryString = "SELECT ";
                     if(count($this->columns)) {
-                        $queryString .= "`" . implode($this->columns, ", ") . "`";
+                        foreach($this->columns as $alias => $column){
+                            if(count($this->joins) > 0){
+                                $columns_arr[]= "`". $alias . "`.`".$column. "`";
+                            }else{
+                                $columns_arr[]= $column;
+                            }
+                        }
+                        $queryString .= implode($columns_arr, ", ");                            
+                        
                     } else {
                         $queryString .= "*";
                     }
 
                     $queryString .= " FROM `".$this->table."`";
+                    if($this->tableAlias != ""){
+                        $queryString .= " AS ".$this->tableAlias." ";
+                    }
+
+                    if(count($this->joins)){
+                        foreach($this->joins as $join){
+                            $queryString .= $join['type'] . " " . $join['table'] . " AS ".$join['alias']." ON " . $join['on'] ." ";
+                        }
+                    }
                     break;
                 case INSERT:
                     $queryString = "INSERT INTO `".$this->table."` (`".implode($this->columns, "`, `")."`)";
